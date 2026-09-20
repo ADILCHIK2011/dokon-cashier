@@ -1,0 +1,5 @@
+import { request } from './http';
+
+export function sendAiMessage(messages) {
+  return request('/ai/chat', { method: 'POST', body: { messages } });
+}
