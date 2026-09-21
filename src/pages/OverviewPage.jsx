@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ScanBarcode, Package, Users, BarChart3, Wallet, Receipt, TrendingUp, ArrowRight } from 'lucide-react';
+import { ScanBarcode, Package, Users, BarChart3, Wallet, Receipt, TrendingUp, ArrowRight, Sparkles } from 'lucide-react';
 import { getSummary, getTopProducts } from '../api/analytics.api';
 import { listProducts } from '../api/products.api';
+import { getDailyBriefing } from '../api/ai.api';
 import { useAuth } from '../auth/AuthContext';
 import { PageHeader } from '../components/PageHeader';
 import { StatTile } from '../components/StatTile';
@@ -28,8 +29,47 @@ function formatMoney(n) {
   return `${n.toLocaleString()} so'm`;
 }
 
+function DailyBriefing() {
+  const [text, setText] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    getDailyBriefing()
+      .then((data) => setText(data.text))
+      .catch(() => setFailed(true))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // A missing/failed briefing shouldn't break the rest of the dashboard.
+  if (failed) return null;
+
+  return (
+    <div className="glow-primary mb-6 flex animate-fade-up items-start gap-4 rounded-box border border-base-300 bg-base-100 p-5">
+      <div
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-field text-primary-content"
+        style={{ backgroundImage: 'var(--gradient-brand)' }}
+      >
+        <Sparkles size={18} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <h2 className="mb-1.5 font-heading text-sm font-semibold text-base-content/80">Bugungi AI hisobot</h2>
+        {loading ? (
+          <div className="flex flex-col gap-2 py-1">
+            <div className="skeleton-shimmer h-3.5 w-full rounded" />
+            <div className="skeleton-shimmer h-3.5 w-4/5 rounded" />
+          </div>
+        ) : (
+          <p className="text-sm leading-relaxed text-base-content/70">{text}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function OverviewPage() {
   const { user } = useAuth();
+  const isPro = user?.market?.plan === 'pro';
   const [summary, setSummary] = useState(null);
   const [topProducts, setTopProducts] = useState([]);
   const [lowStock, setLowStock] = useState([]);
@@ -54,6 +94,8 @@ export function OverviewPage() {
   return (
     <div>
       <PageHeader title="Bosh sahifa" subtitle={`Xush kelibsiz, ${user?.name || ''}`} />
+
+      {isPro && <DailyBriefing />}
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatTile
