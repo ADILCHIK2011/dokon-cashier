@@ -1,8 +1,99 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { changePassword } from '../api/auth.api';
+import { getTelegramStatus, disconnectTelegram } from '../api/telegram.api';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
+import { PricingCard } from '../components/PricingCard';
+import { PLAN_PRICES, PLAN_FEATURES } from '../data/plans';
 import { useAuth } from '../auth/AuthContext';
+
+function TelegramCard() {
+  const { user } = useAuth();
+  const [status, setStatus] = useState(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const isPro = user?.market?.plan === 'pro';
+
+  useEffect(() => {
+    if (!isPro) return;
+    getTelegramStatus()
+      .then(setStatus)
+      .catch(() => setStatus({ connected: false, botUsername: null }));
+  }, [isPro]);
+
+  if (!isPro) {
+    return (
+      <div className="mt-6 max-w-sm">
+        <PricingCard
+          title="Pro"
+          price={PLAN_PRICES.pro}
+          features={PLAN_FEATURES.pro}
+          highlight
+          actionLabel="Pro rejaga o'tish uchun administratorga murojaat qiling"
+          disabled
+        />
+      </div>
+    );
+  }
+
+  async function handleDisconnect() {
+    setError('');
+    setBusy(true);
+    try {
+      await disconnectTelegram();
+      setStatus((s) => ({ ...s, connected: false }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-6 max-w-sm rounded-box border border-base-300 bg-base-100 p-6">
+      <h2 className="mb-1 font-heading text-base font-semibold">Telegram bot</h2>
+      <p className="mb-4 text-sm text-base-content/50">
+        Kunlik hisobot va bildirishnomalarni Telegram orqali oling
+      </p>
+
+      {status === null && <p className="text-sm text-base-content/50">Yuklanmoqda...</p>}
+
+      {status?.connected === true && (
+        <div className="flex flex-col gap-3">
+          <p className="flex items-center gap-2 text-sm text-success">
+            <span className="h-2 w-2 rounded-full bg-success" /> Ulangan
+          </p>
+          <Button variant="danger" onClick={handleDisconnect} disabled={busy}>
+            {busy ? 'Uzilmoqda...' : 'Uzish'}
+          </Button>
+        </div>
+      )}
+
+      {status?.connected === false && status.botUsername && (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-base-content/70">
+            Botni oching, <code className="font-mono">/start</code> yuboring, so'ng do'kon kodi
+            (slug), login va parolingizni so'ralganda yuboring.
+          </p>
+          <a
+            href={`https://t.me/${status.botUsername}`}
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-primary"
+          >
+            Telegramda ochish
+          </a>
+        </div>
+      )}
+
+      {status?.connected === false && !status.botUsername && (
+        <p className="text-sm text-base-content/50">Bot bu serverda hali sozlanmagan.</p>
+      )}
+
+      {error && <p className="mt-3 text-sm text-error">{error}</p>}
+    </div>
+  );
+}
 
 export function SettingsPage() {
   const { user } = useAuth();
@@ -66,6 +157,8 @@ export function SettingsPage() {
           </Button>
         </form>
       </div>
+
+      {user?.role === 'owner' && <TelegramCard />}
     </div>
   );
 }

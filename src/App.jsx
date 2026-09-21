@@ -5,6 +5,7 @@ import { DashboardShell } from './layout/DashboardShell';
 import { LoginPage } from './pages/LoginPage';
 import { CashierPage } from './pages/CashierPage';
 import { ProductsPage } from './pages/ProductsPage';
+import { BarcodeGeneratorPage } from './pages/BarcodeGeneratorPage';
 import { WorkersPage } from './pages/WorkersPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -35,6 +36,7 @@ function App() {
               <Route path="/overview" element={<OverviewPage />} />
               <Route path="/ai" element={<AIPage />} />
               <Route path="/products" element={<ProductsPage />} />
+              <Route path="/barcode-generator" element={<BarcodeGeneratorPage />} />
               <Route path="/sales-history" element={<SalesHistoryPage />} />
               <Route path="/dead-stock" element={<DeadStockPage />} />
               <Route path="/workers" element={<WorkersPage />} />

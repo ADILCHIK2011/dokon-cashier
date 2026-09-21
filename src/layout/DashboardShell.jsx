@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard,
   ScanBarcode,
+  Barcode,
   Package,
   History,
   PackageX,
@@ -26,6 +27,7 @@ const OWNER_NAV = [
   { to: '/ai', label: 'AI yordamchi', icon: Sparkles },
   { to: '/cashier', label: 'Kassa', icon: ScanBarcode },
   { to: '/products', label: 'Mahsulotlar', icon: Package },
+  { to: '/barcode-generator', label: 'Shtrix-kod yaratish', icon: Barcode },
   { to: '/sales-history', label: 'Savdolar tarixi', icon: History },
   { to: '/dead-stock', label: "O'lik mahsulotlar", icon: PackageX },
   { to: '/workers', label: 'Xodimlar', icon: Users },

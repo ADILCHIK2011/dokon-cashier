@@ -17,6 +17,10 @@ export function getProductByBarcode(barcode) {
   return request(`/products/barcode/${barcode}`);
 }
 
+export function generateBarcode() {
+  return request('/products/generate-barcode');
+}
+
 export function createProduct(data) {
   return request('/products', { method: 'POST', body: data });
 }
