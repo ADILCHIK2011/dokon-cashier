@@ -3,6 +3,7 @@ import { getDeadStock } from '../api/analytics.api';
 import { PageHeader } from '../components/PageHeader';
 import { Badge } from '../components/Badge';
 import { Pagination } from '../components/Pagination';
+import { formatQuantity } from '../data/units';
 
 const PRESETS = [
   { label: '7 kun', days: 7 },
@@ -73,7 +74,7 @@ export function DeadStockPage() {
                 <tr key={p._id} className="animate-fade-up" style={{ '--i': i }}>
                   <td className="font-mono text-sm text-base-content/70">{p.barcode}</td>
                   <td className="font-medium">{p.name}</td>
-                  <td>{p.stock} dona</td>
+                  <td>{formatQuantity(p.stock, p.unit)}</td>
                   <td>
                     {p.lastSoldAt ? (
                       <Badge tone={tone}>{daysSince} kun oldin</Badge>

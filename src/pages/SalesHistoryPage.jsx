@@ -8,6 +8,7 @@ import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
 import { Pagination } from '../components/Pagination';
 import { PAYMENT_METHODS, paymentMethodLabel } from '../data/paymentMethods';
+import { formatQuantity } from '../data/units';
 
 const PRESETS = [
   { label: '7 kun', days: 7 },
@@ -81,7 +82,7 @@ export function SalesHistoryPage() {
           date: new Date(s.completedAt).toLocaleString('uz-UZ'),
           cashier: s.cashier?.name || '—',
           payment: paymentMethodLabel(s.paymentMethod),
-          itemsDetail: s.items.map((it) => `${it.name} x${it.quantity}`).join(', '),
+          itemsDetail: s.items.map((it) => `${it.name} x${formatQuantity(it.quantity, it.unit)}`).join(', '),
           itemCount: s.items.length,
           total: s.total,
         })),
@@ -201,7 +202,7 @@ export function SalesHistoryPage() {
             {openSale.items.map((item) => (
               <div key={item.product} className="flex justify-between gap-2">
                 <span className="flex-1">
-                  {item.name} x{item.quantity}
+                  {item.name} x{formatQuantity(item.quantity, item.unit)}
                 </span>
                 <span>{item.lineTotal.toLocaleString()}</span>
               </div>

@@ -1,7 +1,11 @@
-export const IMPORT_TEMPLATE_HEADERS = ['barcode', 'name', 'price', 'stock'];
+export const IMPORT_TEMPLATE_HEADERS = ['barcode', 'name', 'price', 'stock', 'unit'];
 
 export function buildTemplateCsv() {
-  return IMPORT_TEMPLATE_HEADERS.join(',') + '\n4780012345678,Non,3000,50\n';
+  return (
+    IMPORT_TEMPLATE_HEADERS.join(',') +
+    '\n4780012345678,Non,3000,50,dona' +
+    '\n4780012345679,Pomidor,15000,25.5,kg\n'
+  );
 }
 
 export function downloadTemplateCsv() {
@@ -31,6 +35,7 @@ export async function parseSpreadsheetFile(file) {
       name: String(normalized.name ?? '').trim(),
       price: normalized.price,
       stock: normalized.stock,
+      unit: String(normalized.unit ?? '').trim(),
     };
   });
 }

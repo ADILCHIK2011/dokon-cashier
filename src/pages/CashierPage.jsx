@@ -5,6 +5,7 @@ import { cancelSale, completeSale, createSale, listMySales, updateSaleItems } fr
 import { useBarcodeScanner } from '../hooks/useBarcodeScanner';
 import { Button } from '../components/Button';
 import { PAYMENT_METHODS } from '../data/paymentMethods';
+import { roundQuantity, stepFor } from '../data/units';
 
 export function CashierPage() {
   const [tickets, setTickets] = useState([]);
@@ -103,32 +104,34 @@ export function CashierPage() {
     await handleScan(manualBarcode.trim());
   }
 
-  async function changeQuantity(productId, delta) {
+  async function changeQuantity(productId, delta, unit) {
     setScanError('');
     try {
       await applyItemsChange(activeTicket._id, (items) => {
         const line = items.find((i) => i.productId === productId);
-        line.quantity += delta;
+        line.quantity = roundQuantity(line.quantity + delta, unit);
       });
     } catch (err) {
       setScanError(err.message);
     }
   }
 
-  async function commitQuantityDraft(productId) {
+  async function commitQuantityDraft(productId, unit) {
     const draft = qtyDrafts[productId];
     setQtyDrafts((prev) => {
       const { [productId]: _omit, ...rest } = prev;
       return rest;
     });
     if (draft === undefined) return;
-    const value = Number(draft);
+    // Uzbek/Russian keyboards use a comma as the decimal separator — accept
+    // either when a cashier types a weight like "0,758".
+    const value = Number(String(draft).replace(',', '.'));
     if (!Number.isFinite(value) || value <= 0) return;
     setScanError('');
     try {
       await applyItemsChange(activeTicket._id, (items) => {
         const line = items.find((i) => i.productId === productId);
-        line.quantity = Math.floor(value);
+        line.quantity = unit === 'kg' ? roundQuantity(value, unit) : Math.floor(value);
       });
     } catch (err) {
       setScanError(err.message);
@@ -244,25 +247,31 @@ export function CashierPage() {
               <tbody>
                 {activeTicket.items.map((item, i) => (
                   <tr key={item.product} className="animate-fade-up" style={{ '--i': i }}>
-                    <td className="font-medium">{item.name}</td>
-                    <td>{item.price.toLocaleString()}</td>
+                    <td className="font-medium">
+                      {item.name}
+                      {item.unit === 'kg' && <span className="ml-1 text-xs text-base-content/40">(kg)</span>}
+                    </td>
+                    <td>
+                      {item.price.toLocaleString()}
+                      {item.unit === 'kg' && <span className="text-base-content/40">/kg</span>}
+                    </td>
                     <td>
                       <div className="join">
                         <button
                           className="btn btn-ghost btn-sm join-item"
-                          onClick={() => changeQuantity(item.product, -1)}
+                          onClick={() => changeQuantity(item.product, -stepFor(item.unit), item.unit)}
                         >
                           -
                         </button>
                         <input
-                          type="number"
-                          min="1"
-                          className="input input-bordered input-sm join-item w-14 text-center"
+                          type="text"
+                          inputMode="decimal"
+                          className="input input-bordered input-sm join-item w-16 text-center"
                           value={qtyDrafts[item.product] ?? item.quantity}
                           onChange={(e) =>
                             setQtyDrafts((prev) => ({ ...prev, [item.product]: e.target.value }))
                           }
-                          onBlur={() => commitQuantityDraft(item.product)}
+                          onBlur={() => commitQuantityDraft(item.product, item.unit)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -272,7 +281,7 @@ export function CashierPage() {
                         />
                         <button
                           className="btn btn-ghost btn-sm join-item"
-                          onClick={() => changeQuantity(item.product, 1)}
+                          onClick={() => changeQuantity(item.product, stepFor(item.unit), item.unit)}
                         >
                           +
                         </button>

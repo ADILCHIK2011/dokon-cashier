@@ -3,6 +3,7 @@ import { TrendingUp, Receipt, Wallet, CalendarRange } from 'lucide-react';
 import { getDaily, getSummary, getTopProducts } from '../api/analytics.api';
 import { PageHeader } from '../components/PageHeader';
 import { StatTile } from '../components/StatTile';
+import { formatQuantity } from '../data/units';
 
 const PRESETS = [
   { label: '7 kun', days: 7 },
@@ -317,7 +318,7 @@ export function AnalyticsPage() {
             {topProducts.map((p, i) => (
               <tr key={p._id} className="animate-fade-up" style={{ '--i': i }}>
                 <td className="font-medium">{p.name}</td>
-                <td>{p.quantity} dona</td>
+                <td>{formatQuantity(p.quantity, p.unit)}</td>
                 <td>{formatMoney(p.revenue)}</td>
               </tr>
             ))}

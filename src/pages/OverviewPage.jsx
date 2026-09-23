@@ -9,6 +9,7 @@ import { PageHeader } from '../components/PageHeader';
 import { StatTile } from '../components/StatTile';
 import { Badge } from '../components/Badge';
 import { useTilt } from '../hooks/useTilt';
+import { formatQuantity } from '../data/units';
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -130,7 +131,7 @@ export function OverviewPage() {
                   style={{ '--i': i }}
                 >
                   <span className="font-medium">{p.name}</span>
-                  <Badge tone={p.stock === 0 ? 'danger' : 'warning'}>{p.stock} dona</Badge>
+                  <Badge tone={p.stock === 0 ? 'danger' : 'warning'}>{formatQuantity(p.stock, p.unit)}</Badge>
                 </li>
               ))}
             </ul>
@@ -155,7 +156,7 @@ export function OverviewPage() {
                   style={{ '--i': i }}
                 >
                   <span className="font-medium">{p.name}</span>
-                  <span className="text-base-content/60">{p.quantity} dona</span>
+                  <span className="text-base-content/60">{formatQuantity(p.quantity, p.unit)}</span>
                 </li>
               ))}
             </ul>

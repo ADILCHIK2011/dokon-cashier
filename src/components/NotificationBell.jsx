@@ -4,6 +4,7 @@ import { Bell, AlertTriangle } from 'lucide-react';
 import { listProducts } from '../api/products.api';
 import { useAuth } from '../auth/AuthContext';
 import { getSocket } from '../socket';
+import { formatQuantity } from '../data/units';
 
 const LOW_STOCK_THRESHOLD = 5;
 const SUBSCRIPTION_WARNING_DAYS = 7;
@@ -118,7 +119,7 @@ export function NotificationBell() {
                 >
                   <AlertTriangle size={16} className="mt-0.5 shrink-0 text-error" />
                   <span>
-                    <strong>{p.name}</strong> — {p.stock} dona qoldi
+                    <strong>{p.name}</strong> — {formatQuantity(p.stock, p.unit)} qoldi
                   </span>
                 </Link>
               ))}
