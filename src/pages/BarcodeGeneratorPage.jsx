@@ -5,6 +5,7 @@ import { generateBarcode, createProduct } from '../api/products.api';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
 import { UNIT_OPTIONS, isFractionalUnit, unitSuffix } from '../data/units';
+import { downloadBarcodeLabelPng } from '../utils/svgToPng';
 
 export function BarcodeGeneratorPage() {
   const navigate = useNavigate();
@@ -71,32 +72,12 @@ export function BarcodeGeneratorPage() {
   }
 
   function handleDownload() {
-    const svg = svgRef.current;
-    if (!svg) return;
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
-    const img = new Image();
-    img.onload = () => {
-      const scale = 4; // upscale well past screen resolution for crisp label printing
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.scale(scale, scale);
-      ctx.drawImage(img, 0, 0);
-      URL.revokeObjectURL(url);
-      canvas.toBlob((blob) => {
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `shtrix-kod-${barcode}.png`;
-        link.click();
-        URL.revokeObjectURL(link.href);
-      }, 'image/png');
-    };
-    img.src = url;
+    downloadBarcodeLabelPng({
+      svg: svgRef.current,
+      name,
+      price: `${Number(price).toLocaleString()} so'm${unitSuffix(unit)}`,
+      filename: `shtrix-kod-${barcode}.png`,
+    });
   }
 
   function handlePrint() {
