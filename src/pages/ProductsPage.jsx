@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
+import { ProductBarcodeModal } from '../components/ProductBarcodeModal';
 import { Badge } from '../components/Badge';
 import { Pagination } from '../components/Pagination';
 import { getSocket } from '../socket';
@@ -25,6 +26,7 @@ export function ProductsPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
+  const [viewing, setViewing] = useState(null);
   const [error, setError] = useState('');
   const [importOpen, setImportOpen] = useState(false);
 
@@ -172,7 +174,12 @@ export function ProductsPage() {
           </thead>
           <tbody>
             {products.map((p, i) => (
-              <tr key={p._id} className="animate-fade-up" style={{ '--i': i }}>
+              <tr
+                key={p._id}
+                className="animate-fade-up cursor-pointer hover:bg-base-200"
+                style={{ '--i': i }}
+                onClick={() => setViewing(p)}
+              >
                 <td className="font-mono text-sm text-base-content/70">{p.barcode}</td>
                 <td className="font-medium">{p.name}</td>
                 <td>{p.price.toLocaleString()} so'm</td>
@@ -183,7 +190,7 @@ export function ProductsPage() {
                     <span>{formatQuantity(p.stock, p.unit)}</span>
                   )}
                 </td>
-                <td className="whitespace-nowrap text-right">
+                <td className="whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
                   <button className="btn btn-ghost btn-sm" onClick={() => setEditing(p)}>
                     Tahrirlash
                   </button>
@@ -211,6 +218,8 @@ export function ProductsPage() {
       )}
 
       {importOpen && <ImportModal onClose={() => setImportOpen(false)} onImported={reload} />}
+
+      {viewing && <ProductBarcodeModal product={viewing} onClose={() => setViewing(null)} />}
     </div>
   );
 }

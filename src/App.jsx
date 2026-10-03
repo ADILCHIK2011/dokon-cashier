@@ -1,4 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { RequireRole } from './auth/RequireRole';
 import { DashboardShell } from './layout/DashboardShell';
@@ -24,6 +26,7 @@ function RootRedirect() {
 function App() {
   return (
     <AuthProvider>
+      <ToastContainer position="top-right" autoClose={6000} newestOnTop closeOnClick pauseOnHover theme="colored" />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
