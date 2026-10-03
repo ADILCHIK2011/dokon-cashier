@@ -11,7 +11,7 @@ import { ProductBarcodeModal } from '../components/ProductBarcodeModal';
 import { Badge } from '../components/Badge';
 import { Pagination } from '../components/Pagination';
 import { getSocket } from '../socket';
-import { UNIT_OPTIONS, formatQuantity } from '../data/units';
+import { UNIT_OPTIONS, formatQuantity, normalizeUnit, isFractionalUnit, unitSuffix } from '../data/units';
 
 const LOW_STOCK_THRESHOLD = 5;
 const PAGE_SIZE = 10;
@@ -79,7 +79,7 @@ export function ProductsPage() {
       name: form.get('name'),
       price: Number(form.get('price')),
       stock: Number(form.get('stock') || 0),
-      unit: form.get('unit') === 'kg' ? 'kg' : 'dona',
+      unit: normalizeUnit(form.get('unit')),
     };
     try {
       if (editing._id) {
@@ -121,8 +121,9 @@ export function ProductsPage() {
           { header: 'Nomi', key: 'name', width: 32 },
           { header: 'Narxi', key: 'price', width: 14, format: 'currency' },
           { header: 'Qoldiq', key: 'stock', width: 12, format: 'number' },
+          { header: "O'lchov birligi", key: 'unit', width: 16 },
         ],
-        rows: all.map((p) => ({ barcode: p.barcode, name: p.name, price: p.price, stock: p.stock })),
+        rows: all.map((p) => ({ barcode: p.barcode, name: p.name, price: p.price, stock: p.stock, unit: p.unit })),
       });
     } finally {
       setExporting(false);
@@ -227,7 +228,7 @@ export function ProductsPage() {
 function ProductFormModal({ product, error, onSubmit, onClose }) {
   const [barcode, setBarcode] = useState(product.barcode || '');
   const [unit, setUnit] = useState(product.unit || 'dona');
-  const isKg = unit === 'kg';
+  const isFractional = isFractionalUnit(unit);
 
   useBarcodeScanner((code) => setBarcode(code));
 
@@ -269,25 +270,25 @@ function ProductFormModal({ product, error, onSubmit, onClose }) {
         </div>
         <div className="flex gap-3">
           <label className="block flex-1">
-            <span className="mb-1 block text-sm text-base-content/60">Narxi (so'm{isKg ? '/kg' : ''})</span>
+            <span className="mb-1 block text-sm text-base-content/60">Narxi (so'm{unitSuffix(unit)})</span>
             <input
               className="input input-bordered w-full"
               name="price"
               type="number"
               min="0"
-              step={isKg ? '0.01' : '1'}
+              step={isFractional ? '0.01' : '1'}
               defaultValue={product.price}
               required
             />
           </label>
           <label className="block flex-1">
-            <span className="mb-1 block text-sm text-base-content/60">Qoldiq {isKg ? '(kg)' : '(dona)'}</span>
+            <span className="mb-1 block text-sm text-base-content/60">Qoldiq ({unit})</span>
             <input
               className="input input-bordered w-full"
               name="stock"
               type="number"
               min="0"
-              step={isKg ? '0.001' : '1'}
+              step={isFractional ? '0.001' : '1'}
               defaultValue={product.stock ?? 0}
             />
           </label>
@@ -346,8 +347,8 @@ function ImportModal({ onClose, onImported }) {
           Ustunlar: <code className="font-mono">barcode, name, price, stock, unit</code>
           <br />
           <span className="text-base-content/40">
-            unit ixtiyoriy — "dona" yoki "kg" (bo'sh qoldirilsa: yangi mahsulot uchun "dona", mavjud mahsulot
-            uchun o'zgarmaydi)
+            unit ixtiyoriy — "dona", "kg" yoki "metr" (bo'sh qoldirilsa: yangi mahsulot uchun "dona", mavjud
+            mahsulot uchun o'zgarmaydi)
           </span>
         </p>
         <button className="link link-primary w-fit text-sm" onClick={downloadTemplateCsv} type="button">
