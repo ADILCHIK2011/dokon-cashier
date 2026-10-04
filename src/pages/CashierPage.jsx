@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Search, Trash2, Wallet, X } from 'lucide-react';
+import { Camera, Mic, Plus, Search, Trash2, Wallet, X } from 'lucide-react';
 import { getProductByBarcode, searchProductsQuick } from '../api/products.api';
 import { cancelSale, completeSale, createSale, listMySales, updateSaleItems } from '../api/sales.api';
 import { createDebtor, listDebtors } from '../api/debtors.api';
@@ -7,8 +7,12 @@ import { useAuth } from '../auth/AuthContext';
 import { useBarcodeScanner } from '../hooks/useBarcodeScanner';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
+import { CameraScanner } from '../components/CameraScanner';
+import { VoiceSearch } from '../components/VoiceSearch';
 import { PAYMENT_METHODS } from '../data/paymentMethods';
 import { roundQuantity, stepFor, isFractionalUnit, unitSuffix } from '../data/units';
+
+const CAN_USE_CAMERA = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
 
 const CASHIER_PAYMENT_METHODS = PAYMENT_METHODS.filter((m) => m.value !== 'nasiya');
 
@@ -44,6 +48,9 @@ export function CashierPage() {
   // In-progress edits to a line's quantity field, keyed by productId — lets
   // a cashier type "30" once for a bulk item instead of tapping "+" 30 times.
   const [qtyDrafts, setQtyDrafts] = useState({});
+
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
 
   const [nasiyaOpen, setNasiyaOpen] = useState(false);
   const [nasiyaQuery, setNasiyaQuery] = useState('');
@@ -137,6 +144,18 @@ export function CashierPage() {
   }
 
   useBarcodeScanner(handleScan);
+
+  // Separate from handleScan — the camera overlay has its own result flash
+  // and must never touch the manual-search input/suggestions state.
+  async function handleCameraDetect(barcode) {
+    try {
+      const { product } = await getProductByBarcode(barcode);
+      await addProductToCart(product);
+      return { ok: true, text: `${product.name} qo'shildi` };
+    } catch {
+      return { ok: false, text: `"${barcode}" topilmadi` };
+    }
+  }
 
   // Debounced name search as the cashier types — lets them find a product
   // without knowing its barcode. Skipped once a suggestion was just picked
@@ -407,6 +426,28 @@ export function CashierPage() {
         <Button type="submit" variant="secondary">
           Qo'shish
         </Button>
+        {CAN_USE_CAMERA && (
+          <button
+            type="button"
+            onClick={() => setCameraOpen(true)}
+            className="btn btn-outline btn-square"
+            aria-label="Kamera bilan skanerlash"
+            title="Kamera bilan skanerlash"
+          >
+            <Camera size={18} />
+          </button>
+        )}
+        {isPro && (
+          <button
+            type="button"
+            onClick={() => setVoiceOpen(true)}
+            className="btn btn-outline btn-square"
+            aria-label="Ovoz bilan qidirish"
+            title="Ovoz bilan qidirish"
+          >
+            <Mic size={18} />
+          </button>
+        )}
       </form>
       {scanError && <p className="mb-3 text-sm text-error">{scanError}</p>}
 
@@ -608,6 +649,9 @@ export function CashierPage() {
           </div>
         </Modal>
       )}
+
+      {cameraOpen && <CameraScanner onDetect={handleCameraDetect} onClose={() => setCameraOpen(false)} />}
+      {voiceOpen && <VoiceSearch onAddProduct={addProductToCart} onClose={() => setVoiceOpen(false)} />}
     </div>
   );
 }

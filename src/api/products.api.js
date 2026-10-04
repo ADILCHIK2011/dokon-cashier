@@ -40,3 +40,7 @@ export function deleteProduct(id) {
 export function importProducts(items) {
   return request('/products/import', { method: 'POST', body: { items } });
 }
+
+export function voiceSearchProducts(audio, mimeType) {
+  return request('/products/voice-search', { method: 'POST', body: { audio, mimeType } });
+}
