@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createProduct, deleteProduct, importProducts, listProducts, updateProduct } from '../api/products.api';
 import { downloadTemplateCsv, parseSpreadsheetFile } from '../api/importProducts';
 import { exportToXlsx } from '../api/exportXlsx';
@@ -76,6 +76,10 @@ export function ProductsPage() {
     const form = new FormData(e.target);
     const payload = {
       barcode: form.get('barcode'),
+      extraBarcodes: form
+        .getAll('extraBarcodes')
+        .map((v) => v.trim())
+        .filter(Boolean),
       name: form.get('name'),
       price: Number(form.get('price')),
       stock: Number(form.get('stock') || 0),
@@ -227,10 +231,29 @@ export function ProductsPage() {
 
 function ProductFormModal({ product, error, onSubmit, onClose }) {
   const [barcode, setBarcode] = useState(product.barcode || '');
+  const [extraBarcodes, setExtraBarcodes] = useState(
+    product.extraBarcodes?.length ? [...product.extraBarcodes] : []
+  );
   const [unit, setUnit] = useState(product.unit || 'dona');
   const isFractional = isFractionalUnit(unit);
+  const activeBarcodeFieldRef = useRef({ type: 'main' });
 
-  useBarcodeScanner((code) => setBarcode(code));
+  useBarcodeScanner((code) => {
+    const target = activeBarcodeFieldRef.current;
+    if (target.type === 'extra') {
+      updateExtraBarcode(target.index, code);
+    } else {
+      setBarcode(code);
+    }
+  });
+
+  function updateExtraBarcode(index, value) {
+    setExtraBarcodes((prev) => prev.map((v, i) => (i === index ? value : v)));
+  }
+
+  function removeExtraBarcode(index) {
+    setExtraBarcodes((prev) => prev.filter((_, i) => i !== index));
+  }
 
   return (
     <Modal title={product._id ? 'Mahsulotni tahrirlash' : 'Yangi mahsulot'} onClose={onClose}>
@@ -244,10 +267,43 @@ function ProductFormModal({ product, error, onSubmit, onClose }) {
             name="barcode"
             value={barcode}
             onChange={(e) => setBarcode(e.target.value)}
+            onFocus={() => (activeBarcodeFieldRef.current = { type: 'main' })}
             required
             autoFocus
           />
         </label>
+        {extraBarcodes.map((code, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input
+              className="input input-bordered w-full font-mono"
+              name="extraBarcodes"
+              placeholder="Qo'shimcha shtrix-kod"
+              value={code}
+              onChange={(e) => updateExtraBarcode(i, e.target.value)}
+              onFocus={() => (activeBarcodeFieldRef.current = { type: 'extra', index: i })}
+            />
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm btn-circle text-base-content/50 hover:text-error"
+              onClick={() => removeExtraBarcode(i)}
+              aria-label="Shtrix-kodni olib tashlash"
+            >
+              &times;
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="btn btn-outline btn-sm w-fit"
+          onClick={() => {
+            setExtraBarcodes((prev) => {
+              activeBarcodeFieldRef.current = { type: 'extra', index: prev.length };
+              return [...prev, ''];
+            });
+          }}
+        >
+          + Yana shtrix-kod qo'shish
+        </button>
         <label className="block">
           <span className="mb-1 block text-sm text-base-content/60">Nomi</span>
           <input className="input input-bordered w-full" name="name" defaultValue={product.name} required />
