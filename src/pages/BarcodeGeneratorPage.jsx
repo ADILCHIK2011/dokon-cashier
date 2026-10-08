@@ -13,6 +13,7 @@ export function BarcodeGeneratorPage() {
   const svgRef = useRef(null);
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
+  const [costPrice, setCostPrice] = useState('');
   const [stock, setStock] = useState('');
   const [unit, setUnit] = useState('dona');
   const isFractional = isFractionalUnit(unit);
@@ -53,7 +54,14 @@ export function BarcodeGeneratorPage() {
     setError('');
     setSaving(true);
     try {
-      await createProduct({ barcode, name, price: Number(price), stock: Number(stock || 0), unit });
+      await createProduct({
+        barcode,
+        name,
+        price: Number(price),
+        costPrice: costPrice ? Number(costPrice) : undefined,
+        stock: Number(stock || 0),
+        unit,
+      });
       setSaved(true);
     } catch (err) {
       setError(err.message);
@@ -65,6 +73,7 @@ export function BarcodeGeneratorPage() {
   function handleReset() {
     setName('');
     setPrice('');
+    setCostPrice('');
     setStock('');
     setUnit('dona');
     setBarcode(null);
@@ -135,17 +144,30 @@ export function BarcodeGeneratorPage() {
               />
             </label>
             <label className="block flex-1">
-              <span className="mb-1 block text-sm text-base-content/60">Qoldiq ({unit})</span>
+              <span className="mb-1 block text-sm text-base-content/60">
+                Kirish narxi <span className="text-base-content/40">(ixtiyoriy)</span>
+              </span>
               <input
                 className="input input-bordered w-full"
                 type="number"
                 min="0"
-                step={isFractional ? '0.001' : '1'}
-                value={stock}
-                onChange={(e) => setStock(e.target.value)}
+                step={isFractional ? '0.01' : '1'}
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
               />
             </label>
           </div>
+          <label className="block">
+            <span className="mb-1 block text-sm text-base-content/60">Qoldiq ({unit})</span>
+            <input
+              className="input input-bordered w-full"
+              type="number"
+              min="0"
+              step={isFractional ? '0.001' : '1'}
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+            />
+          </label>
 
           {error && <p className="text-sm text-error">{error}</p>}
 
