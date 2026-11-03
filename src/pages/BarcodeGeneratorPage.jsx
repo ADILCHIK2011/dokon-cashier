@@ -4,9 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { generateBarcode, createProduct } from '../api/products.api';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
-import { UNIT_OPTIONS, isFractionalUnit, unitSuffix } from '../data/units';
-import { downloadBarcodeLabelPng } from '../utils/svgToPng';
 import { printLabel } from '../utils/printLabel';
+import { UNIT_OPTIONS, isFractionalUnit, unitSuffix } from '../data/units';
 
 export function BarcodeGeneratorPage() {
   const navigate = useNavigate();
@@ -82,12 +81,63 @@ export function BarcodeGeneratorPage() {
   }
 
   function handleDownload() {
-    downloadBarcodeLabelPng({
-      svg: svgRef.current,
-      name,
-      price: `${Number(price).toLocaleString()} so'm${unitSuffix(unit)}`,
-      filename: `shtrix-kod-${barcode}.png`,
-    });
+    const svg = svgRef.current;
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      const scale = 4; // upscale well past screen resolution for crisp label printing
+      const padding = 16 * scale;
+      const gap = 6 * scale;
+      const nameFont = `600 ${22 * scale}px sans-serif`;
+      const priceFont = `${20 * scale}px sans-serif`;
+      const priceText = `${Number(price).toLocaleString()} so'm${unitSuffix(unit)}`;
+      const barcodeWidth = img.width * scale;
+      const barcodeHeight = img.height * scale;
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Label text is drawn as plain pixels here, never fed to JsBarcode, so
+      // it can never end up encoded in the barcode itself — only the scanned
+      // digits under the bars (rendered by JsBarcode's own displayValue) are
+      // the real barcode.
+      ctx.font = nameFont;
+      const nameWidth = ctx.measureText(name).width;
+      ctx.font = priceFont;
+      const priceWidth = ctx.measureText(priceText).width;
+
+      canvas.width = Math.max(nameWidth, priceWidth, barcodeWidth) + padding * 2;
+      canvas.height = padding * 2 + 22 * scale + gap + 20 * scale + gap + barcodeHeight;
+
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#000';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+
+      let y = padding;
+      ctx.font = nameFont;
+      ctx.fillText(name, canvas.width / 2, y);
+      y += 22 * scale + gap;
+      ctx.font = priceFont;
+      ctx.fillText(priceText, canvas.width / 2, y);
+      y += 20 * scale + gap;
+
+      ctx.drawImage(img, (canvas.width - barcodeWidth) / 2, y, barcodeWidth, barcodeHeight);
+
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `shtrix-kod-${barcode}.png`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }, 'image/png');
+    };
+    img.src = url;
   }
 
   function handlePrint() {

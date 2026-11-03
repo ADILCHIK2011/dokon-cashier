@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
-import { createDebtor, getDebtor, listDebtors, recordPayment } from '../api/debtors.api';
+import { createDebtor, deleteDebtor, getDebtor, listDebtors, recordPayment } from '../api/debtors.api';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
@@ -136,6 +136,8 @@ function DebtorDetail({ id, onClose, onChanged }) {
   const [loading, setLoading] = useState(true);
   const [payError, setPayError] = useState('');
   const [paying, setPaying] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const [expandedPurchase, setExpandedPurchase] = useState(null);
 
   function reload() {
@@ -146,6 +148,21 @@ function DebtorDetail({ id, onClose, onChanged }) {
   }
 
   useEffect(reload, [id]);
+
+  async function handleDelete() {
+    setDeleteError('');
+    if (!window.confirm("Bu nasiyachini o'chirishni tasdiqlaysizmi?")) return;
+    setDeleting(true);
+    try {
+      await deleteDebtor(id);
+      onChanged();
+      onClose();
+    } catch (err) {
+      setDeleteError(err.message);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function handlePay(e) {
     e.preventDefault();
@@ -249,6 +266,13 @@ function DebtorDetail({ id, onClose, onChanged }) {
                 <div className="py-4 text-center text-sm text-base-content/40">To'lovlar yo'q</div>
               )}
             </div>
+          </div>
+
+          <div className="border-t border-base-300 pt-4">
+            {deleteError && <p className="mb-2 text-sm text-error">{deleteError}</p>}
+            <Button variant="danger" onClick={handleDelete} disabled={deleting}>
+              {deleting ? '...' : "Nasiyachini o'chirish"}
+            </Button>
           </div>
         </div>
       )}

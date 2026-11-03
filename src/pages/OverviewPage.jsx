@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ScanBarcode, Package, Users, BarChart3, Wallet, Receipt, TrendingUp, ArrowRight, Sparkles } from 'lucide-react';
-import { getSummary, getTopProducts } from '../api/analytics.api';
+import { getSummary, getTopProducts, getInventoryValue } from '../api/analytics.api';
 import { listProducts } from '../api/products.api';
 import { getDailyBriefing } from '../api/ai.api';
 import { useAuth } from '../auth/AuthContext';
@@ -74,6 +74,7 @@ export function OverviewPage() {
   const [summary, setSummary] = useState(null);
   const [topProducts, setTopProducts] = useState([]);
   const [lowStock, setLowStock] = useState([]);
+  const [inventoryValue, setInventoryValue] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -83,11 +84,13 @@ export function OverviewPage() {
       getSummary(params),
       getTopProducts({ ...params, limit: 5 }),
       listProducts({ maxStock: LOW_STOCK_THRESHOLD, limit: 6 }),
+      getInventoryValue(),
     ])
-      .then(([s, t, p]) => {
+      .then(([s, t, p, inv]) => {
         setSummary(s);
         setTopProducts(t.products);
         setLowStock(p.products);
+        setInventoryValue(inv);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -113,6 +116,30 @@ export function OverviewPage() {
           format={(n) => formatMoney(Math.round(n))}
           icon={TrendingUp}
         />
+      </div>
+
+      <div className={inventoryValue?.missingCostPriceCount > 0 ? 'mb-2' : 'mb-6'}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <StatTile
+            label="Ombordagi tovar qiymati (kirish narxida)"
+            value={inventoryValue?.totalCostValue}
+            format={(n) => formatMoney(Math.round(n))}
+            icon={Wallet}
+            accent
+          />
+          <StatTile
+            label="Ombordagi tovar qiymati (sotuv narxida)"
+            value={inventoryValue?.totalSellValue}
+            format={(n) => formatMoney(Math.round(n))}
+            icon={Package}
+          />
+        </div>
+        {inventoryValue?.missingCostPriceCount > 0 && (
+          <p className="mt-2 text-xs text-warning">
+            {inventoryValue.missingCostPriceCount} ta mahsulotda kirish narxi kiritilmagan — kirish narxidagi
+            summa haqiqiysidan kam ko'rsatilgan bo'lishi mumkin.
+          </p>
+        )}
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
