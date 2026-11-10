@@ -217,14 +217,26 @@ export function CashierPage() {
     await addProductToCart(product);
   }
 
+  // Skips over out-of-stock suggestions (they're rendered disabled, so arrow
+  // navigation shouldn't be able to land the highlight on one).
+  function nextSelectableIndex(list, from, dir) {
+    if (!list.some((p) => p.stock > 0)) return -1;
+    let i = from;
+    for (let step = 0; step < list.length; step++) {
+      i = (i + dir + list.length) % list.length;
+      if (list[i].stock > 0) return i;
+    }
+    return from;
+  }
+
   function handleSearchKeyDown(e) {
     if (!showSuggestions || suggestions.length === 0) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setHighlightIndex((i) => (i + 1) % suggestions.length);
+      setHighlightIndex((i) => nextSelectableIndex(suggestions, i, 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setHighlightIndex((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
+      setHighlightIndex((i) => nextSelectableIndex(suggestions, i, -1));
     } else if (e.key === 'Escape') {
       setShowSuggestions(false);
       setHighlightIndex(-1);
@@ -233,7 +245,7 @@ export function CashierPage() {
 
   async function handleManualSubmit(e) {
     e.preventDefault();
-    if (showSuggestions && highlightIndex >= 0 && suggestions[highlightIndex]) {
+    if (showSuggestions && highlightIndex >= 0 && suggestions[highlightIndex]?.stock > 0) {
       await selectSuggestion(suggestions[highlightIndex]);
       return;
     }
@@ -453,27 +465,43 @@ export function CashierPage() {
             </button>
           )}
           {showSuggestions && suggestions.length > 0 && (
-            <ul className="absolute z-20 mt-1 max-h-80 w-full overflow-auto rounded-box border border-base-300 bg-base-100 py-1 shadow-xl">
-              {suggestions.map((product, i) => (
-                <li key={product._id}>
-                  <button
-                    type="button"
-                    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
-                      i === highlightIndex ? 'bg-base-200' : 'hover:bg-base-200'
-                    }`}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onMouseEnter={() => setHighlightIndex(i)}
-                    onClick={() => selectSuggestion(product)}
-                  >
-                    <Search size={14} className="shrink-0 text-base-content/40" />
-                    <span className="flex-1 truncate">{highlightMatch(product.name, manualBarcode.trim())}</span>
-                    <span className="shrink-0 text-base-content/50">
-                      {product.price.toLocaleString()}
-                      {unitSuffix(product.unit)}
-                    </span>
-                  </button>
-                </li>
-              ))}
+            <ul className="absolute z-20 mt-1 max-h-80 w-full overflow-auto rounded-box border border-base-300 bg-base-100 py-1 shadow-xl sm:w-[28rem]">
+              {suggestions.map((product, i) => {
+                const outOfStock = product.stock <= 0;
+                return (
+                  <li key={product._id}>
+                    <button
+                      type="button"
+                      disabled={outOfStock}
+                      className={`flex w-full items-start gap-2 px-3 py-2 text-left text-sm ${
+                        outOfStock
+                          ? 'cursor-not-allowed opacity-40'
+                          : i === highlightIndex
+                            ? 'bg-base-200'
+                            : 'hover:bg-base-200'
+                      }`}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onMouseEnter={() => !outOfStock && setHighlightIndex(i)}
+                      onClick={() => !outOfStock && selectSuggestion(product)}
+                    >
+                      <Search size={14} className="mt-0.5 shrink-0 text-base-content/40" />
+                      <span className="flex-1 whitespace-normal break-words">
+                        {highlightMatch(product.name, manualBarcode.trim())}
+                      </span>
+                      <span className="shrink-0 whitespace-nowrap text-right text-base-content/50">
+                        {outOfStock ? (
+                          <span className="font-medium text-error">Tugagan</span>
+                        ) : (
+                          <>
+                            {product.price.toLocaleString()}
+                            {unitSuffix(product.unit)}
+                          </>
+                        )}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
